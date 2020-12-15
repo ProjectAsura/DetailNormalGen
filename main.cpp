@@ -50,6 +50,12 @@ float3 cross(const float3& a, const float3& b)
         ( a.x * b.y ) - ( a.y * b.x ));
 }
 
+float3 normalize(const float3& v)
+{
+    auto mag = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    return float3(v.x / mag, v.y / mag, v.z / mag);
+}
+
 
 enum TGA_COLORMAP_TYPE
 {
@@ -215,12 +221,12 @@ int main(int argc, char** argv)
 
     pcg32_init(123456789);
 
+    const int kCount = 100;
+    float rx[kCount] = {};
+    float ry[kCount] = {};
+    float frequency[kCount] = {};
 
-    float rx[100] = {};
-    float ry[100] = {};
-    float frequency[100] = {};
-
-    for(auto i=0; i<100; ++i)
+    for(auto i=0; i<kCount; ++i)
     {
         rx[i]        = pcg_f32() * kSize;
         ry[i]        = pcg_f32() * kSize;
@@ -240,16 +246,16 @@ int main(int argc, char** argv)
         for(size_t j=0; j<kSize; ++j)
         {
             auto z = 0.0f;
-            for(auto k=0; k<100; ++k)
+            for(auto k=0; k<kCount; ++k)
             {
                 auto x = float(j) - rx[k];
                 auto y = float(i) - ry[k];
                 z += sin( (x * x + y * y) / (2.08f + 5.0f * frequency[k]) );
             }
-            z /= 100.0f;
+            z /= float(kCount);
 
             auto idx = j + i * kSize;
-            heights[idx] = z * 1.0f;
+            heights[idx] = z;
         }
     }
 
@@ -265,10 +271,10 @@ int main(int argc, char** argv)
     {
         for(auto j=0; j<kSize; ++j)
         {
-            auto du = float3(1.0f, 0.0f, (h(j+1, i, kSize, heights) - h(j-1, i, kSize, heights)) * 0.5f);
-            auto dv = float3(0.0f, 1.0f, (h(j, i+1, kSize, heights) - h(j, i-1, kSize, heights)) * 0.5f);
+            auto du = normalize(float3(1.0f, 0.0f, (h(j+1, i, kSize, heights) - h(j-1, i, kSize, heights)) * 0.5f));
+            auto dv = normalize(float3(0.0f, 1.0f, (h(j, i+1, kSize, heights) - h(j, i-1, kSize, heights)) * 0.5f));
 
-            auto n = cross(du, dv);
+            auto n = normalize(cross(du, dv));
 
             auto idx = j * 4 + i * kSize * 4;
             normals[idx + 0] = uint8_t((n.x * 0.5f + 0.5f) * 255);
